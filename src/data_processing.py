@@ -21,10 +21,3 @@ def shuffleSample(file):
     f.writelines(sample[index])
   return shuffle_file
 
-def generateData(file):
-  dataset = tf.data.TextLineDataset(file)
-  dataset = dataset.map(lambda i: tf.strings.to_number(tf.strings.bytes_split(i), 'int32'))
-  dataset = dataset.batch(128).map(lambda i: (tf.one_hot(i[:,0:-1],4), i[:,-1]))
-  return dataset.shuffle(256).repeat()
-
-
