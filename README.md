@@ -13,8 +13,6 @@ If the current directory is deepVirScan, then the command line is
 `python src/run.py example/example.train.data`  
 Annother method is running code as below in python:
 ```
-import sys
-import numpy as np
 import tensorflow as tf
 from src.data_processing import generate_r1r2
 model = tf.keras.models.load_model("model/deepVirScan.h5")
