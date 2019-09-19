@@ -8,7 +8,7 @@ This project provides a deep learning method to detect virus reads from metageno
 `tensorflow 2.0.0`  
 
 # Usage
-This is version is only used to test whether the convolutional neural network is feasible for seeking virus reads in metagenomics. But if you want to use this model, then the usage is below:
+This version is only used to test whether the convolutional neural network is feasible for seeking virus reads in metagenomics. But if you want to use this model, then the usage is below:  
 If the current directory is deepVirScan, then the command line is  
 `python src/run.py example/example.train.data`  
 Annother method is running code as below in python:
