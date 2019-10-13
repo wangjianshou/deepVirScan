@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import tensorflow as tf
 import tensorboard
@@ -29,22 +30,13 @@ class mini_model(keras.Model):
     self.conv = layers.Conv1D(channel, kernel, strides=1, activation='relu', padding='valid')
     self.pool = layers.MaxPooling1D(kernel, strides=kernel, padding='valid')
     self.global_pool = layers.GlobalAveragePooling1D()
-  @tf.function
+  #@tf.function
   def call(self, inputs):
     r1 = self.pool(self.conv(inputs[0]))
     r2 = self.pool(self.conv(inputs[1]))
     block = layers.concatenate([r1,r2], axis=-2)
     return self.global_pool(block)
 
-'''
-# 测试mini_model
-tmp = (tf.random.normal([256, 150, 2]), tf.random.normal([256, 150, 2]), np.random.random_integers(0,1, 256))
-d = tf.data.Dataset.from_tensor_slices(tmp).map(lambda x,y,z: ((x, y),z)).repeat().batch(128)
-m = mini_model()
-m.compile(optimizer=tf.optimizers.Adam(0.001),
-          loss = 'binary_crossentropy', metrics=['acc'])
-m.fit(d, steps_per_epoch=10, epochs=10,validation_data=d, validation_steps=5)
-'''
 
 class VirScan(keras.Model):
   def __init__(self):
@@ -62,7 +54,7 @@ class VirScan(keras.Model):
     self.norm_1 = layers.BatchNormalization(axis=-1)
     self.drop_1 = layers.Dropout(0.1)
     self.output_1 = layers.Dense(1, activation='sigmoid')
-  @tf.function
+  #@tf.function
   def call(self, inputs, training=True):
     embed = [self.embed(inputs[0]), self.embed(inputs[1])]
     f5 = self.mini_5(embed)
@@ -79,33 +71,61 @@ class VirScan(keras.Model):
     drop = self.drop_1(norm, training=training)
     return self.output_1(drop)
 
+
+# 测试mini_model
+def test_mini_model():
+  tmp = (tf.random.normal([256, 150, 2]), tf.random.normal([256, 150, 2]), np.random.random_integers(0,1, 256))
+  d = tf.data.Dataset.from_tensor_slices(tmp).map(lambda x,y,z: ((x, y),z)).repeat().batch(128)
+  m = mini_model()
+  m.compile(optimizer=tf.optimizers.Adam(0.001),
+          loss = 'binary_crossentropy', metrics=['acc'])
+  m.fit(d, steps_per_epoch=10, epochs=10,validation_data=d, validation_steps=5)
+
+
 # 测试
-model = VirScan()
-train = generate_r1r2('../example/example.train.data', 1024)
-validation = generate_r1r2('../example/example.validation.data', 256)
-model.compile(optimizer=tf.optimizers.Adam(0.001),
-              loss = 'binary_crossentropy', metrics=['acc'])
-model.fit(train, steps_per_epoch=10, epochs=10,validation_data=validation, validation_steps=5)
-
-
-'''
-if __name__=='__main__':
-  train_file = "../data/r1r2_train.data"
-  validation_file = "../data/r1r2_validation.data"
-
-  callbacksList = [keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=50),
-                   keras.callbacks.TensorBoard(log_dir='../model/train_logs',
-                   histogram_freq=1, embeddings_freq=10),
-                   keras.callbacks.ModelCheckpoint(filepath="../model/deepVirScan.h5",
-                   monitor='val_loss', save_best_only=True),
-                  ]
-
+def test():
+  model = VirScan()
+  train = generate_r1r2('../example/example.train.data', 1024)
+  validation = generate_r1r2('../example/example.validation.data', 256)
   model.compile(optimizer=tf.optimizers.Adam(0.001),
                 loss = 'binary_crossentropy', metrics=['acc'])
+  model.fit(train, steps_per_epoch=10, epochs=10,validation_data=validation, validation_steps=5)
+  ckpt = tf.train.Checkpoint(model=model)
+  ckpt.save("../model/v2/deepVirScan2")
 
-
+def train():
+  train_file = "../data/r1r2_train.data"
+  validation_file = "../data/r1r2_validation.data"
+  train = generate_r1r2(train_file, 1024)
+  validation = generate_r1r2(validation_file, 256)
+  callbacksList = [keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=50),
+                   keras.callbacks.TensorBoard(log_dir='../model/v2_train_logs',
+                   histogram_freq=1, embeddings_freq=10),
+                   #keras.callbacks.ModelCheckpoint(filepath="../model/deepVirScan.h5",
+                   #monitor='val_loss', save_best_only=True),
+                  ]
+  model.compile(optimizer=tf.optimizers.Adam(0.001),
+                loss = 'binary_crossentropy', metrics=['acc'])
   history = model.fit(train, steps_per_epoch=1000, epochs=1000,
                       validation_data=validation,
                       validation_steps=20,
                       callbacks=callbacksList)
-  '''
+  ckpt = tf.train.Checkpoint(model=model)
+  ckpt.save("../model/v2/deepVirScan2")
+  return history
+
+def parseArgs():
+  argparser = argparse.ArgumentParser(description="Train the model scanning reads")
+  argparser.add_argument("--test", "-t", required=False, default=False, action="store_true")
+  return argparser.parse_args()
+
+if __name__=='__main__':
+  args = parseArgs()
+  if args.test:
+    test()
+  else:
+    train()
+
+
+
+
