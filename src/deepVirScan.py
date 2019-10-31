@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 from tensorflow import keras
 from tensorflow.keras import layers
 
-from data_processing import generate_r1r2
+from .data_processing import generate_r1r2
 
+# 定制BatchNormalization层，未完成，暂时没用
 class BatchNormGraph(layers.Layer):
   def __init__(self, axis=-1, epsilon=0.001, center=True, scale=True):
     super.__init__()
@@ -32,7 +33,7 @@ class mini_model(keras.Model):
     self.conv_2 = layers.Conv1D(channel, kernel, strides=1, activation='relu', padding='valid')
     self.pool_2 = layers.MaxPooling1D(kernel, strides=kernel, padding='valid')
     self.global_pool = layers.GlobalAveragePooling1D()
-  #@tf.function
+  @tf.function
   def call(self, inputs):
     r1 = self.pool_1(self.conv_1(inputs[0]))
     r2 = self.pool_2(self.conv_2(inputs[1]))
@@ -62,11 +63,6 @@ class VirScan(keras.Model):
     self.mini_18 = mini_model(64, 18)
     self.mini_19 = mini_model(64, 19)
     self.mini_20 = mini_model(64, 20)
-    self.mini_21 = mini_model(64, 21)
-    self.mini_22 = mini_model(64, 22)
-    self.mini_23 = mini_model(64, 23)
-    self.mini_24 = mini_model(64, 24)
-    self.mini_25 = mini_model(64, 25)
     self.dense_1 = layers.Dense(512, activation='relu')
     self.norm_1 = layers.BatchNormalization(axis=-1)
     self.drop_1 = layers.Dropout(0.1)
@@ -74,8 +70,9 @@ class VirScan(keras.Model):
     self.norm_2 = layers.BatchNormalization(axis=-1)
     self.drop_2 = layers.Dropout(0.1)
     self.output_1 = layers.Dense(1, activation='sigmoid')
-  #@tf.function
-  def call(self, inputs, training=None):
+  #@tf.function(input_signature=((tf.TensorSpec(shape=(None, 150), dtype=tf.float32), tf.TensorSpec(shape=(None, 150), dtype=tf.float32)), True))
+  @tf.function
+  def call(self, inputs, training=False):
     embed = [self.embed(inputs[0]), self.embed(inputs[1])]
     f3 = self.mini_3(embed)
     f4 = self.mini_4(embed)
@@ -95,13 +92,6 @@ class VirScan(keras.Model):
     f18 = self.mini_18(embed)
     f19 = self.mini_19(embed)
     f20 = self.mini_20(embed)
-    '''
-    f21 = self.mini_21(embed)
-    f22 = self.mini_22(embed)
-    f23 = self.mini_23(embed)
-    f24 = self.mini_24(embed)
-    f25 = self.mini_25(embed)
-    '''
     block_all = layers.concatenate([f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18,f19,f20], axis=-1)
     dense_1 = self.dense_1(block_all)
     norm_1 = self.norm_1(dense_1, training=training)
@@ -109,7 +99,7 @@ class VirScan(keras.Model):
     dense_2 = self.dense_2(block_all)
     norm_2 = self.norm_2(dense_2, training=training)
     drop_2 = self.drop_2(norm_2, training=training)
-    return self.output_1(drop_2)
+    return tf.squeeze(self.output_1(drop_2))
 
 
 

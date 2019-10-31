@@ -24,9 +24,9 @@ def shuffleSample(file):
 def generate_predict(file, buffer_size):
   dataset = tf.data.TextLineDataset(file)
   dataset = dataset.map(lambda x: tf.strings.split(x, '\t'))
-  dataset = dataset.map(lambda x: ((tf.strings.to_number(tf.strings.bytes_split(x[0])), tf.strings.to_number(tf.strings.bytes_split(x[1]))), tf.strings.to_number(x[2])))
+  dataset = dataset.map(lambda x: ((tf.strings.to_number(tf.strings.bytes_split(x[0])), tf.strings.to_number(tf.strings.bytes_split(x[1])))))
   dataset = dataset.shuffle(buffer_size)
-  return dataset
+  return dataset.batch(1024)
 
 def generate_r1r2(file, buffer_size):
   dataset = tf.data.TextLineDataset(file)
