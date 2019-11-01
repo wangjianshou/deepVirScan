@@ -64,7 +64,7 @@ def train(train_file, validation_file, epochs, steps, v_steps):
     tf.print("validation_loss-epoch: ", np.mean(validation_loss))
     tf.print("{}/{}\n".format(epoch, epochs), "validation_accyracy: ", accuracy.result())
     accuracy.reset_states()
-  ckpt = tf.train.Checkpoint(model=model)
+  ckpt = tf.train.Checkpoint(model=model, optimizer=optimizer)
   ckpt.save("model/deepVirScan-ckpt/deepVirScan")
   tf.saved_model.save(model, "model/deepVirScan/", signatures=model.call.get_concrete_function(
                       (tf.TensorSpec(shape=(None,150), dtype=tf.float32), 
