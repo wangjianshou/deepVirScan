@@ -30,8 +30,10 @@ There are two functions in this script: `base2num` and `shuffleSample`.
 
 * `shuffleSample(file)`: This function can arrange each line randomly.
 
-# train.py
+# train_v2.py
 
 The model is trained by this script.
 
+# deepVirScan.py
 
+This is the raw code to build model.
