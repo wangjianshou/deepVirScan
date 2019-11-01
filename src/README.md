@@ -26,7 +26,7 @@ optional arguments:
 # data_processing.py
 
 There are two functions in this script: `base2num` and `shuffleSample`.  
-* `base2num(file, label)`:  This function can convert base sequences to numeric sequences. For example, ${\rm ATCGN} \rightarrow {\rm 01234}$. And at the end of each line, it can add `\t$label`,`$label=1` for virus reads and `$label=0` for bacteria reads.
+* `base2num(file, label)`:  This function can convert base sequences to numeric sequences. For example, $\rm{ATCGN} \rightarrow \rm{01234}$$. And at the end of each line, it can add `\t$label`,`$label=1` for virus reads and `$label=0` for bacteria reads.
 
 * `shuffleSample(file)`: This function can arrange each line randomly.
 
