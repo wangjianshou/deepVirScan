@@ -33,7 +33,7 @@ class mini_model(keras.Model):
     self.conv_2 = layers.Conv1D(channel, kernel, strides=1, activation='relu', padding='valid')
     self.pool_2 = layers.MaxPooling1D(kernel, strides=kernel, padding='valid')
     self.global_pool = layers.GlobalAveragePooling1D()
-  @tf.function
+  #@tf.function
   def call(self, inputs):
     r1 = self.pool_1(self.conv_1(inputs[0]))
     r2 = self.pool_2(self.conv_2(inputs[1]))
