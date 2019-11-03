@@ -28,15 +28,13 @@ class BatchNormGraph(layers.Layer):
 class mini_model(keras.Model):
   def __init__(self, channel=64, kernel=3):
     super().__init__()
-    self.conv_1 = layers.Conv1D(channel, kernel, strides=1, activation='relu', padding='valid')
-    self.pool_1 = layers.MaxPooling1D(kernel, strides=kernel, padding='valid')
-    self.conv_2 = layers.Conv1D(channel, kernel, strides=1, activation='relu', padding='valid')
-    self.pool_2 = layers.MaxPooling1D(kernel, strides=kernel, padding='valid')
+    self.conv = layers.Conv1D(channel, kernel, strides=1, activation='relu', padding='valid')
+    self.pool = layers.MaxPooling1D(kernel, strides=kernel, padding='valid')
     self.global_pool = layers.GlobalAveragePooling1D()
   #@tf.function
   def call(self, inputs):
-    r1 = self.pool_1(self.conv_1(inputs[0]))
-    r2 = self.pool_2(self.conv_2(inputs[1]))
+    r1 = self.pool(self.conv(inputs[0]))
+    r2 = self.pool(self.conv(inputs[1]))
     block = layers.concatenate([r1,r2], axis=-2)
     return self.global_pool(block)
 
@@ -70,7 +68,6 @@ class VirScan(keras.Model):
     self.norm_2 = layers.BatchNormalization(axis=-1)
     self.drop_2 = layers.Dropout(0.1)
     self.output_1 = layers.Dense(1, activation='sigmoid')
-  #@tf.function(input_signature=((tf.TensorSpec(shape=(None, 150), dtype=tf.float32), tf.TensorSpec(shape=(None, 150), dtype=tf.float32)), True))
   @tf.function
   def call(self, inputs, training=False):
     embed = [self.embed(inputs[0]), self.embed(inputs[1])]
