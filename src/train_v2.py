@@ -28,20 +28,24 @@ def train_keras(train_file, validation_file, epochs, steps, v_steps):
   ckpt.save("model/deepVirScan2-ckpt")
   return history
 
-def train(train_file, validation_file, epochs, steps, v_steps):
+def train(train_file, validation_file, epochs, steps, v_steps, retrain=False):
   model = VirScan()
   optimizer = tf.optimizers.Adam()
   accuracy = tf.metrics.BinaryAccuracy()
   writer = tf.summary.create_file_writer("model/tensorboard")
   train = iter(generate_r1r2(train_file, 1024))
   validation = iter(generate_r1r2(validation_file, 256))
+  if retrain:
+    ckpt = tf.train.Checkpoint(model=model, optimizer=optimizer)
+    latest = tf.train.latest_checkpoint("model/deepVirScan-ckpt/")
+    ckpt.restore(latest)
   for epoch in range(epochs):
     train_loss = []
     for step in range(steps):
       with tf.GradientTape() as tape:
         x,y = next(train)
         y_pred = model(x, training=True)
-        loss = tf.losses.binary_crossentropy(y, y_pred)
+        loss = tf.losses.binary_crossentropy(y, y_pred) + tf.reduce_sum(model.losses)
       grad = tape.gradient(loss, model.trainable_variables)
       optimizer.apply_gradients(grads_and_vars=zip(grad, model.trainable_variables))
       accuracy.update_state(y, y_pred)
@@ -72,7 +76,7 @@ def train(train_file, validation_file, epochs, steps, v_steps):
                      )
 def parseArgs():
   argparser = argparse.ArgumentParser(description="Train the model scanning reads")
-  argparser.add_argument("--test", "-t", required=False, default=False, action="store_true")
+  argparser.add_argument("--retrain", "-r", required=False, default=False, action="store_true")
   argparser.add_argument("--epochs", "-e", required=False, default=10, type=int)
   argparser.add_argument("--steps", "-s", required=False, default=5, type=int)
   argparser.add_argument("--vsteps", "-vs", required=False, default=5, type=int)
@@ -80,13 +84,9 @@ def parseArgs():
 
 if __name__=='__main__':
   args = parseArgs()
-  if args.test:
-    train_file = "example/example.train.data"
-    validation_file = "example/example.validation.data"
-  else:
-    train_file = "data/r1r2_train.data"
-    validation_file = "data/r1r2_validation.data"
-  train(train_file, validation_file, args.epochs, args.steps, args.vsteps)
+  train_file = "data/r1r2_train.data"
+  validation_file = "data/r1r2_validation.data"
+  train(train_file, validation_file, args.epochs, args.steps, args.vsteps, args.retrain)
 
 
 

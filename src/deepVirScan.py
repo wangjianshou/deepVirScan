@@ -28,7 +28,9 @@ class BatchNormGraph(layers.Layer):
 class mini_model(keras.Model):
   def __init__(self, channel=64, kernel=3):
     super().__init__()
-    self.conv = layers.Conv1D(channel, kernel, strides=1, activation='relu', padding='valid')
+    self.conv = layers.Conv1D(channel, kernel, strides=1, activation='relu', padding='valid',
+                              kernel_regularizer=keras.regularizers.l1(0.01),
+                              bias_regularizer=keras.regularizers.l1(0.01))
     self.pool = layers.MaxPooling1D(kernel, strides=kernel, padding='valid')
     self.global_pool = layers.GlobalAveragePooling1D()
   #@tf.function
@@ -64,10 +66,14 @@ class VirScan(keras.Model):
     self.dense_1 = layers.Dense(512, activation='relu')
     self.norm_1 = layers.BatchNormalization(axis=-1)
     self.drop_1 = layers.Dropout(0.1)
-    self.dense_2 = layers.Dense(64, activation='relu')
+    self.dense_2 = layers.Dense(64, activation='relu',
+                                kernel_regularizer=keras.regularizers.l2(0.001),
+                                bias_regularizer=keras.regularizers.l2(0.001))
     self.norm_2 = layers.BatchNormalization(axis=-1)
     self.drop_2 = layers.Dropout(0.1)
-    self.output_1 = layers.Dense(1, activation='sigmoid')
+    self.output_1 = layers.Dense(1, activation='sigmoid', 
+                                 kernel_regularizer=keras.regularizers.l2(0.001),
+                                 bias_regularizer=keras.regularizers.l2(0.001))
   @tf.function
   def call(self, inputs, training=False):
     embed = [self.embed(inputs[0]), self.embed(inputs[1])]
