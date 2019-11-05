@@ -32,6 +32,7 @@ def train(train_file, validation_file, epochs, steps, v_steps, retrain=False):
   model = VirScan()
   optimizer = tf.optimizers.Adam()
   accuracy = tf.metrics.BinaryAccuracy()
+  mean_loss = tf.metrics.Mean()
   writer = tf.summary.create_file_writer("model/tensorboard")
   train = iter(generate_r1r2(train_file, 1024))
   validation = iter(generate_r1r2(validation_file, 256))
@@ -40,7 +41,6 @@ def train(train_file, validation_file, epochs, steps, v_steps, retrain=False):
     latest = tf.train.latest_checkpoint("model/deepVirScan-ckpt/")
     ckpt.restore(latest)
   for epoch in range(epochs):
-    train_loss = []
     for step in range(steps):
       with tf.GradientTape() as tape:
         x,y = next(train)
@@ -49,25 +49,26 @@ def train(train_file, validation_file, epochs, steps, v_steps, retrain=False):
       grad = tape.gradient(loss, model.trainable_variables)
       optimizer.apply_gradients(grads_and_vars=zip(grad, model.trainable_variables))
       accuracy.update_state(y, y_pred)
-      train_loss.append(loss)
+      mean_loss.update_state(loss)
     with writer.as_default():
-      tf.summary.scalar('train_loss-epoch', np.mean(train_loss), step=epoch)
+      tf.summary.scalar('train_loss-epoch', mean_loss.result(), step=epoch)
       tf.summary.scalar('train_accyracy-epoch', accuracy.result(), step=epoch)
-    print("{}/{}\t".format(epoch, epochs), "train_loss-epoch: ", np.mean(train_loss))
-    print("{}/{}\t".format(epoch, epochs), "train_accyracy-epoch:", accuracy.result())
+    tf.print("{}/{}\t".format(epoch, epochs), "train_loss-epoch: ", mean_loss.result())
+    tf.print("{}/{}\t".format(epoch, epochs), "train_accyracy-epoch:", accuracy.result())
     accuracy.reset_states()
-    validation_loss = []
+    mean_loss.reset_states()
     for v_step in range(v_steps):
       vx, vy = next(validation)
       vy_pred = model(vx, training=False)
-      validation_loss.append(tf.losses.binary_crossentropy(vy, vy_pred))
+      mean_loss.update_state(tf.losses.binary_crossentropy(vy, vy_pred))
       accuracy.update_state(vy, vy_pred)
     with writer.as_default():
-      tf.summary.scalar('validation_loss', np.mean(validation_loss), step=epoch)
+      tf.summary.scalar('validation_loss', mean_loss.result(), step=epoch)
       tf.summary.scalar('validation_accuracy', accuracy.result(), step=epoch)
-    print("{}/{}\t".format(epoch, epochs), "validation_loss-epoch: ", np.mean(validation_loss))
-    print("{}/{}\t".format(epoch, epochs), "validation_accyracy: ", accuracy.result())
+    tf.print("{}/{}\t".format(epoch, epochs), "validation_loss-epoch: ", mean_loss.result())
+    tf.print("{}/{}\t".format(epoch, epochs), "validation_accyracy: ", accuracy.result())
     accuracy.reset_states()
+    mean_loss.reset_states()
   ckpt = tf.train.Checkpoint(model=model, optimizer=optimizer)
   ckpt.save("model/deepVirScan-ckpt/deepVirScan")
   tf.saved_model.save(model, "model/deepVirScan/", signatures=model.call.get_concrete_function(
